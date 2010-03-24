@@ -3,10 +3,19 @@ import string
 import sys
 from spidermonkey import Runtime
 
+class Element:
+    type = ''
+    src = ''
+    def __init__(self, type):
+        self.type = type
+    def __del__(self):
+        if (self.src):
+            print "SRC %s" % self.src
 class Body:
     def appendChild(self, arg):
         print "appendChild"
-        print arg
+        if(arg.type == "script"):
+            print arg.src
         print "---"
 
 class ActiveXObject:
@@ -15,8 +24,12 @@ class ActiveXObject:
 
 class Window:
     location=''
+    onload=''
     def __del__(self):
-        #print "Log Window location: %s " % self.location
+        if self.location:
+            print "Log Window location: %s " % self.location
+        if self.onload:
+            print "onLoad: %s" % self.onload
         return
 
 class Document:
@@ -41,9 +54,9 @@ class Document:
         return "http://www.yahoo.com"
 
     def createElement(self, arg):
-        print "createElement"
-        print arg
-        print "---"
+        print "createElement of type:%s" % arg
+        el = Element(arg)
+        return el
 
 class Navigator:
     cookieEnabled =''
@@ -71,9 +84,12 @@ class Deobfuscator:
         cx.bind_callable("eval",self.eval)
         # bind_attribute
         # bind_object
+        window = Window();
         cx.bind_class(Navigator, bind_constructor=True)
         cx.bind_class(Document, bind_constructor=True)
         cx.bind_class(Window, bind_constructor=True)
+        cx.bind_class(Element, bind_constructor=True)
+        cx.bind_object("window",window)
         cx.bind_class(Body, bind_constructor=True)
         cx.bind_class(ActiveXObject, bind_constructor=True)
         return cx
@@ -101,7 +117,7 @@ ok = 0
 failed = 0
 ev = Deobfuscator()
 s = ''
-for arg in sys.argv:
+for arg in sys.argv[1:]:
     try:
         f = open(arg) 
         while f:
